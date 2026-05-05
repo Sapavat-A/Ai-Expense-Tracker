@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const BACKEND_BASE_URLS = ['https://ai-expense-tracker1.onrender.com'];
+const BACKEND_BASE_URLS = [
+  "https://ai-expense-tracker1.onrender.com"
+];
 let activeBaseURL = BACKEND_BASE_URLS[0];
 
 const api = axios.create({
