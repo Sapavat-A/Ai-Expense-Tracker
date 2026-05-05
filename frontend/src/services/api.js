@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const BACKEND_BASE_URLS = [
-  "https://ai-expense-tracker1.onrender.com"
+  "https://ai-expense-backend-6zrb.onrender.com"
 ];
 let activeBaseURL = BACKEND_BASE_URLS[0];
 
