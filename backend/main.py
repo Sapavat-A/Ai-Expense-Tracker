@@ -3,15 +3,33 @@ import os
 import socket
 
 import uvicorn
-from fastapi import FastAPI
+"""
+AI Expense Tracker Backend - Main FastAPI Application
+Production-ready, scalable backend with modular architecture
+"""
+
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.responses import JSONResponse
+from contextlib import asynccontextmanager
+import time
+import logging
 
-from database import Base, engine
-import models
-from routes.expenses import router as expenses_router
-from routes.insights import router as insights_router
-from routes.predict import router as predict_router
+from config import settings
+from database import db
+from routers import (
+    auth,
+    expenses,
+    budgets,
+    analytics,
+    ai_insights,
+    reports,
+    settings as user_settings
+)
 
+
+# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -27,6 +45,8 @@ app.add_middleware(
         "http://127.0.0.1:3000",
         "http://localhost:3001",
         "http://127.0.0.1:3001",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
     ],
     allow_origin_regex=r"http://192\.168\.\d+\.\d+:\d+",
     allow_credentials=True,
@@ -34,25 +54,41 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Ensure SQLAlchemy models are imported before table creation.
-_ = models
-Base.metadata.create_all(bind=engine)
-logger.info("Database tables initialized")
+db_info = get_database_info()
+logger.info(f"Database initialized: {db_info['type']} - {db_info.get('host', 'N/A')}:{db_info.get('port', 'N/A')}")
 
-app.include_router(expenses_router)
-app.include_router(insights_router)
-app.include_router(predict_router)
-logger.info("Routers registered: /expenses, /insights, /predict")
+app.include_router(auth.router)
+app.include_router(expenses.router)
+app.include_router(budgets.router)
+app.include_router(analytics.router)
+app.include_router(ai_insights.router)
+app.include_router(reports.router)
+app.include_router(user_settings.router)
+logger.info("Routers registered: /auth, /expenses, /budgets, /analytics, /ai, /reports, /settings")
 
 
 @app.on_event("startup")
-def on_startup() -> None:
+async def on_startup() -> None:
     logger.info("Expense Tracker API startup complete")
+    
+    # Start email scheduler
+    try:
+        await email_scheduler.start()
+        logger.info("Email scheduler started successfully")
+    except Exception as e:
+        logger.error(f"Failed to start email scheduler: {str(e)}")
 
 
 @app.on_event("shutdown")
-def on_shutdown() -> None:
+async def on_shutdown() -> None:
     logger.info("Expense Tracker API shutting down")
+    
+    # Stop email scheduler
+    try:
+        await email_scheduler.stop()
+        logger.info("Email scheduler stopped successfully")
+    except Exception as e:
+        logger.error(f"Failed to stop email scheduler: {str(e)}")
 
 
 @app.get("/")

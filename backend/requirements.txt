@@ -1,4 +1,11 @@
 fastapi
 uvicorn[standard]
-sqlalchemy
-scikit-learn
+motor
+pymongo
+python-jose[cryptography]
+passlib[bcrypt]
+python-multipart
+pydantic
+pydantic-settings
+python-dotenv
+email-validator
