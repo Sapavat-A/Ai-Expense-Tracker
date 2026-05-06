@@ -1,50 +1,31 @@
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider } from './contexts/ThemeContext';
-import FintechLayout from './components/layout/FintechLayout';
-import ModernAuthModal from './components/auth/ModernAuthModal';
-import LoginPage from './pages/LoginPage';
-import SignupPage from './pages/SignupPage';
-import Overview from './pages/Overview';
-import Transactions from './pages/Transactions';
-import Analytics from './pages/Analytics';
-import Settings from './pages/Settings';
-import Reports from './pages/Reports';
-import Budget from './pages/Budget';
-import AIInsights from './pages/AIInsights';
-import './styles/modern.css';
-
-// Protected route component
-const ProtectedRoute = ({ children }) => {
-  const [user] = useState(() => {
-    const savedUser = localStorage.getItem('fintech-user');
-    return savedUser ? JSON.parse(savedUser) : null;
-  });
-  
-  return user ? children : <Navigate to="/login" />;
-};
-
-// Public route component (redirect if already authenticated)
-const PublicRoute = ({ children }) => {
-  const [user] = useState(() => {
-    const savedUser = localStorage.getItem('fintech-user');
-    return savedUser ? JSON.parse(savedUser) : null;
-  });
-  
-  return !user ? children : <Navigate to="/" />;
-};
+import React, { useState, useEffect } from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import { ThemeProvider } from "./contexts/ThemeContext";
+import FintechLayout from "./components/layout/FintechLayout";
+import Overview from "./pages/Overview";
+import Transactions from "./pages/Transactions";
+import Analytics from "./pages/Analytics";
+import Settings from "./pages/Settings";
+import Reports from "./pages/Reports";
+import Budget from "./pages/Budget";
+import AIInsights from "./pages/AIInsights";
+import "./styles/modern.css";
 
 function App() {
   const [user, setUser] = useState(null);
   const [darkMode, setDarkMode] = useState(() => {
-    const saved = localStorage.getItem('fintech-theme');
-    return saved === 'true' || false;
+    const saved = localStorage.getItem("fintech-theme");
+    return saved === "true" || false;
   });
-  const [showAuth, setShowAuth] = useState(false);
 
   useEffect(() => {
     // Check for saved user on mount
-    const savedUser = localStorage.getItem('fintech-user');
+    const savedUser = localStorage.getItem("fintech-user");
     if (savedUser) {
       setUser(JSON.parse(savedUser));
     }
@@ -52,27 +33,25 @@ function App() {
 
   useEffect(() => {
     // Save theme preference
-    localStorage.setItem('fintech-theme', darkMode.toString());
+    localStorage.setItem("fintech-theme", darkMode.toString());
   }, [darkMode]);
 
   useEffect(() => {
     // Apply theme to document
     if (darkMode) {
-      document.documentElement.classList.add('dark');
+      document.documentElement.classList.add("dark");
     } else {
-      document.documentElement.classList.remove('dark');
+      document.documentElement.classList.remove("dark");
     }
   }, [darkMode]);
 
   const handleAuthSuccess = (userData) => {
     setUser(userData);
-    setShowAuth(false);
   };
 
   const handleLogout = () => {
     setUser(null);
-    localStorage.removeItem('fintech-user');
-    setShowAuth(true);
+    localStorage.removeItem("fintech-user");
   };
 
   const toggleTheme = () => {
@@ -90,34 +69,32 @@ function App() {
           toggleTheme={toggleTheme}
         >
           <Routes>
-            <Route path="/login" element={
-              <PublicRoute>
-                <LoginPage />
-              </PublicRoute>
-            } />
-            <Route path="/signup" element={
-              <PublicRoute>
-                <SignupPage />
-              </PublicRoute>
-            } />
-            <Route path="/" element={<Navigate to="/overview" replace />} />
-            <Route path="/overview" element={<Overview darkMode={darkMode} />} />
-            <Route path="/transactions" element={<Transactions darkMode={darkMode} />} />
-            <Route path="/analytics" element={<Analytics darkMode={darkMode} />} />
+            <Route path="/" element={<Overview darkMode={darkMode} />} />
+            <Route
+              path="/overview"
+              element={<Overview darkMode={darkMode} />}
+            />
+            <Route
+              path="/transactions"
+              element={<Transactions darkMode={darkMode} />}
+            />
+            <Route
+              path="/analytics"
+              element={<Analytics darkMode={darkMode} />}
+            />
             <Route path="/budget" element={<Budget darkMode={darkMode} />} />
-            <Route path="/ai-insights" element={<AIInsights darkMode={darkMode} />} />
+            <Route
+              path="/ai-insights"
+              element={<AIInsights darkMode={darkMode} />}
+            />
             <Route path="/reports" element={<Reports darkMode={darkMode} />} />
-            <Route path="/settings" element={<Settings darkMode={darkMode} user={user} />} />
+            <Route
+              path="/settings"
+              element={<Settings darkMode={darkMode} user={user} />}
+            />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </FintechLayout>
-
-        {/* Auth Modal */}
-        <ModernAuthModal
-          isOpen={showAuth || !user}
-          onClose={() => setShowAuth(false)}
-          onAuthSuccess={handleAuthSuccess}
-          darkMode={darkMode}
-        />
       </Router>
     </ThemeProvider>
   );
