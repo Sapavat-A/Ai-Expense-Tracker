@@ -430,13 +430,134 @@ const ModernNavbar = ({ user, onLogin, onLogout, darkMode, toggleTheme }) => {
                   </AnimatePresence>
                 </div>
               ) : (
-                <button
-                  onClick={() => setShowAuthModal(true)}
-                  className={`flex items-center space-x-2 px-4 py-2 rounded-xl font-medium bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 shadow-lg`}
-                >
-                  <User className="w-4 h-4" />
-                  <span>Sign In</span>
-                </button>
+                <div className="relative">
+                  <button
+                    onClick={() => setIsMenuOpen(!isMenuOpen)}
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-xl font-medium transition-all duration-200 ${
+                      darkMode 
+                        ? 'text-gray-300 hover:text-white hover:bg-gray-700' 
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                    }`}
+                  >
+                    <User className="w-4 h-4" />
+                    <span>Sign In</span>
+                    <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isMenuOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {/* Authentication Dropdown */}
+                  <AnimatePresence>
+                    {isMenuOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                        className={`absolute right-0 top-full mt-2 w-80 rounded-2xl border shadow-2xl backdrop-blur-xl z-50 ${
+                          darkMode 
+                            ? 'border-gray-700 bg-gray-800' 
+                            : 'border-gray-200 bg-white'
+                        }`}
+                      >
+                        <div className="p-4">
+                          <div className="space-y-3">
+                            {/* Google Login */}
+                            <button
+                              onClick={() => {
+                                setShowAuthModal(true);
+                                setIsMenuOpen(false);
+                              }}
+                              className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors duration-200 ${
+                                darkMode 
+                                  ? 'hover:bg-gray-700 text-gray-300' 
+                                  : 'hover:bg-gray-50 text-gray-700'
+                              }`}
+                            >
+                              <div className="w-5 h-5 bg-blue-500 rounded flex items-center justify-center">
+                                <span className="text-white text-xs font-bold">G</span>
+                              </div>
+                              <div className="text-left">
+                                <span className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                  Continue with Google
+                                </span>
+                                <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                  Fast and secure login
+                                </p>
+                              </div>
+                            </button>
+
+                            {/* GitHub Login */}
+                            <button
+                              onClick={() => {
+                                setShowAuthModal(true);
+                                setIsMenuOpen(false);
+                              }}
+                              className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors duration-200 ${
+                                darkMode 
+                                  ? 'hover:bg-gray-700 text-gray-300' 
+                                  : 'hover:bg-gray-50 text-gray-700'
+                              }`}
+                            >
+                              <div className="w-5 h-5 bg-gray-800 rounded flex items-center justify-center">
+                                <span className="text-white text-xs font-bold">GH</span>
+                              </div>
+                              <div className="text-left">
+                                <span className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                  Continue with GitHub
+                                </span>
+                                <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                  Connect your GitHub account
+                                </p>
+                              </div>
+                            </button>
+
+                            {/* Email Login */}
+                            <button
+                              onClick={() => {
+                                setShowAuthModal(true);
+                                setIsMenuOpen(false);
+                              }}
+                              className={`w-full flex items-center space-x-3 p-3 rounded-lg transition-colors duration-200 ${
+                                darkMode 
+                                  ? 'hover:bg-gray-700 text-gray-300' 
+                                  : 'hover:bg-gray-50 text-gray-700'
+                              }`}
+                            >
+                              <div className="w-5 h-5 bg-indigo-500 rounded flex items-center justify-center">
+                                <span className="text-white text-xs font-bold">@</span>
+                              </div>
+                              <div className="text-left">
+                                <span className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                  Continue with Email
+                                </span>
+                                <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                  Use your email address
+                                </p>
+                              </div>
+                            </button>
+
+                            <div className={`h-px ${darkMode ? 'bg-gray-700' : 'bg-gray-200'} my-3`}></div>
+
+                            {/* Sign Up Link */}
+                            <button
+                              onClick={() => {
+                                setShowAuthModal(true);
+                                setIsMenuOpen(false);
+                              }}
+                              className={`w-full p-3 rounded-lg border-2 border-dashed transition-colors duration-200 ${
+                                darkMode 
+                                  ? 'border-gray-600 text-gray-300 hover:border-gray-500 hover:text-gray-200' 
+                                  : 'border-gray-300 text-gray-600 hover:border-gray-400 hover:text-gray-700'
+                              }`}
+                            >
+                              <span className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                Create Account
+                              </span>
+                            </button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               )}
             </div>
 

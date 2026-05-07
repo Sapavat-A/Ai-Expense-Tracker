@@ -11,6 +11,12 @@ import {
 import GoogleAuth from './GoogleAuth';
 import GitHubAuth from './GitHubAuth';
 import EmailAuth from './EmailAuth';
+import { auth } from '../../firebase/config';
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
+} from 'firebase/auth';
 
 const ModernAuthModal = ({ 
   isOpen, 
@@ -21,60 +27,78 @@ const ModernAuthModal = ({
   const [authMode, setAuthMode] = useState('signin');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [forgotMode, setForgotMode] = useState(false);
 
   const handleSocialAuthSuccess = (userData) => {
     setIsLoading(true);
-    // Simulate processing
-    setTimeout(() => {
-      localStorage.setItem('fintech-user', JSON.stringify(userData));
-      onAuthSuccess(userData);
-      setIsLoading(false);
-      onClose();
-    }, 1000);
+    const payload = {
+      ...userData,
+      subscription: 'premium',
+      isOnline: true,
+      memberSince: new Date().getFullYear().toString(),
+    };
+    localStorage.setItem('fintech-user', JSON.stringify(payload));
+    onAuthSuccess(payload);
+    setIsLoading(false);
+    onClose();
   };
 
   const handleEmailAuthSuccess = (formData) => {
     setIsLoading(true);
     setError('');
-    
-    // Simulate API call
-    setTimeout(() => {
-      if (authMode === 'signin') {
-        // Mock sign in
-        const userData = {
-          id: Date.now(),
-          name: formData.name || 'John Doe',
-          email: formData.email,
-          avatar: null,
-          provider: 'email',
-          subscription: 'premium',
-          isOnline: true,
-          memberSince: new Date().getFullYear().toString(),
-          balance: 5420.50,
-          monthlySpent: 2847.32
-        };
-        localStorage.setItem('fintech-user', JSON.stringify(userData));
-        onAuthSuccess(userData);
-      } else {
-        // Mock sign up
-        const userData = {
-          id: Date.now(),
-          name: formData.name,
-          email: formData.email,
-          avatar: null,
-          provider: 'email',
-          subscription: 'free',
-          isOnline: true,
-          memberSince: new Date().getFullYear().toString(),
-          balance: 1000.00,
-          monthlySpent: 0
-        };
-        localStorage.setItem('fintech-user', JSON.stringify(userData));
-        onAuthSuccess(userData);
-      }
+    if (!auth) {
+      setError('Authentication service is not configured.');
+      setIsLoading(false);
+      return;
+    }
+
+    const { email, password, name } = formData;
+
+    const finish = (firebaseUser, subscription = 'free') => {
+      const payload = {
+        id: firebaseUser.uid,
+        name: name || firebaseUser.displayName || email,
+        email,
+        avatar: firebaseUser.photoURL || null,
+        provider: 'email',
+        subscription,
+        isOnline: true,
+        memberSince: new Date().getFullYear().toString(),
+      };
+      localStorage.setItem('fintech-user', JSON.stringify(payload));
+      onAuthSuccess(payload);
       setIsLoading(false);
       onClose();
-    }, 1500);
+    };
+
+    if (forgotMode) {
+      sendPasswordResetEmail(auth, email)
+        .then(() => {
+          setError('Password reset email sent. Check your inbox.');
+          setIsLoading(false);
+        })
+        .catch((err) => {
+          setError(err.message || 'Failed to send reset email.');
+          setIsLoading(false);
+        });
+      return;
+    }
+
+    if (authMode === 'signin') {
+      signInWithEmailAndPassword(auth, email, password)
+        .then(({ user }) => finish(user, 'premium'))
+        .catch((err) => {
+          setError(err.message || 'Sign in failed.');
+          setIsLoading(false);
+        });
+    } else {
+      createUserWithEmailAndPassword(auth, email, password)
+        .then(({ user }) => finish(user, 'free'))
+        .catch((err) => {
+          setError(err.message || 'Sign up failed.');
+          setIsLoading(false);
+        });
+    }
   };
 
   const handleAuthError = (errorMessage) => {
@@ -85,11 +109,7 @@ const ModernAuthModal = ({
   const switchMode = (mode) => {
     setAuthMode(mode);
     setError('');
-  };
-
-  const resetForm = () => {
-    setError('');
-    setIsLoading(false);
+    setForgotMode(false);
   };
 
   if (!isOpen) return null;
@@ -99,33 +119,62 @@ const ModernAuthModal = ({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xl"
       onClick={onClose}
     >
       <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.9, opacity: 0 }}
-        className={`w-full max-w-md mx-4 p-8 rounded-3xl border shadow-2xl backdrop-blur-xl ${
-          darkMode 
-            ? 'border-gray-700 bg-gray-800/95' 
-            : 'border-gray-200 bg-white/95'
-        }`}
+        initial={{ scale: 0.92, opacity: 0, y: 10 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.9, opacity: 0, y: 10 }}
+        className="w-full max-w-5xl mx-4 rounded-3xl overflow-hidden relative"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_0_0,rgba(129,140,248,0.35),transparent_55%),radial-gradient(circle_at_100%_0,rgba(56,189,248,0.35),transparent_55%)] pointer-events-none" />
+        <div className="relative grid grid-cols-1 md:grid-cols-2 bg-slate-950/90 text-white">
+          {/* Left branding */}
+          <div className="p-8 md:p-10 border-r border-white/10 flex flex-col justify-between">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur">
+                <Shield className="w-4 h-4 text-cyan-300" />
+                <span className="text-xs font-medium text-cyan-100">Expense Tracker · AI Insights</span>
+              </div>
+              <h2 className="mt-6 text-3xl md:text-4xl font-semibold leading-tight">
+                Manage your{" "}
+                <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-cyan-300 bg-clip-text text-transparent">
+                  finances smarter
+                </span>
+              </h2>
+              <p className="mt-4 text-sm text-slate-200/80">
+                Connect, track and optimize your spending with real‑time analytics and AI-driven insights.
+              </p>
+            </div>
+            <div className="mt-8 grid grid-cols-2 gap-3 text-xs text-slate-100/80">
+              <div className="rounded-2xl bg-white/5 p-3 border border-white/10 shadow-lg">
+                <p className="font-semibold">Smart Alerts</p>
+                <p className="mt-1 text-slate-200/80">Instant notifications when you approach your budget limits.</p>
+              </div>
+              <div className="rounded-2xl bg-white/5 p-3 border border-white/10 shadow-lg">
+                <p className="font-semibold">Multi-Account</p>
+                <p className="mt-1 text-slate-200/80">Track cards, bank accounts and wallets in one place.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Right auth column */}
+          <div className={`p-6 md:p-8 bg-white/95 text-slate-900`}>
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-3">
             <div className="p-3 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 bg-opacity-20">
               <Shield className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+              <h2 className="text-2xl font-bold text-slate-900">
                 {authMode === 'signin' ? 'Welcome Back' : 'Create Account'}
               </h2>
-              <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+              <p className="text-sm text-slate-500">
                 {authMode === 'signin' 
-                  ? 'Sign in to your FinTrack Pro account'
+                  ? 'Sign in to your Expense Tracker account'
                   : 'Join thousands managing their finances smarter'
                 }
               </p>
@@ -133,11 +182,7 @@ const ModernAuthModal = ({
           </div>
           <button
             onClick={onClose}
-            className={`p-2 rounded-xl transition-colors duration-200 ${
-              darkMode 
-                ? 'text-gray-400 hover:text-white hover:bg-gray-700' 
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-            }`}
+            className="p-2 rounded-xl text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors duration-200"
           >
             <X className="w-5 h-5" />
           </button>
@@ -156,15 +201,13 @@ const ModernAuthModal = ({
 
         {/* Mode Toggle */}
         <div className="flex justify-center mb-6">
-          <div className={`inline-flex rounded-xl p-1 ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+          <div className="inline-flex rounded-xl p-1 bg-slate-100">
             <button
               onClick={() => switchMode('signin')}
               className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
                 authMode === 'signin'
-                  ? `text-white bg-gradient-to-r from-blue-600 to-indigo-600 shadow-lg`
-                  : darkMode 
-                    ? 'text-gray-300 hover:text-white hover:bg-gray-600' 
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
+                  ? `text-white bg-gradient-to-r from-indigo-600 via-purple-600 to-cyan-500 shadow-lg`
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
               }`}
               disabled={isLoading}
             >
@@ -175,11 +218,9 @@ const ModernAuthModal = ({
               onClick={() => switchMode('signup')}
               className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
                 authMode === 'signup'
-                  ? `text-white bg-gradient-to-r from-blue-600 to-indigo-600 shadow-lg`
-                  : darkMode 
-                    ? 'text-gray-300 hover:text-white hover:bg-gray-600' 
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-200'
-              }`}
+                  ? `text-white bg-gradient-to-r from-indigo-600 via-purple-600 to-cyan-500 shadow-lg`
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
+                }`}
               disabled={isLoading}
             >
               <UserPlus className="w-4 h-4 mr-2" />
@@ -191,7 +232,7 @@ const ModernAuthModal = ({
         {/* Social Authentication */}
         <div className="space-y-3 mb-6">
           <div className="text-center">
-            <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+            <p className="text-sm text-slate-500">
               {authMode === 'signin' ? 'Or continue with' : 'Or sign up with'}
             </p>
           </div>
@@ -212,11 +253,11 @@ const ModernAuthModal = ({
 
         {/* Divider */}
         <div className="flex items-center mb-6">
-          <div className={`flex-1 h-px ${darkMode ? 'bg-gray-600' : 'bg-gray-300'}`}></div>
-          <span className={`px-4 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+          <div className="flex-1 h-px bg-slate-200" />
+          <span className="px-4 text-sm text-slate-400">
             OR
           </span>
-          <div className={`flex-1 h-px ${darkMode ? 'bg-gray-600' : 'bg-gray-300'}`}></div>
+          <div className="flex-1 h-px bg-slate-200" />
         </div>
 
         {/* Email Form */}
@@ -224,19 +265,19 @@ const ModernAuthModal = ({
           mode={authMode}
           onSubmit={handleEmailAuthSuccess}
           isLoading={isLoading}
-          darkMode={darkMode}
+          darkMode={false}
           onModeChange={switchMode}
         />
 
         {/* Footer */}
-        <div className="text-center mt-6">
-          <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+        <div className="text-center mt-4">
+          <p className="text-sm text-slate-500">
             {authMode === 'signin' ? (
               <>
                 Don't have an account?{' '}
                 <button
                   onClick={() => switchMode('signup')}
-                  className="text-blue-600 hover:text-blue-700 font-medium"
+                  className="text-indigo-600 hover:text-indigo-700 font-medium"
                   disabled={isLoading}
                 >
                   Sign up
@@ -247,7 +288,7 @@ const ModernAuthModal = ({
                 Already have an account?{' '}
                 <button
                   onClick={() => switchMode('signin')}
-                  className="text-blue-600 hover:text-blue-700 font-medium"
+                  className="text-indigo-600 hover:text-indigo-700 font-medium"
                   disabled={isLoading}
                 >
                   Sign in
@@ -258,18 +299,20 @@ const ModernAuthModal = ({
         </div>
 
         {/* Terms */}
-        <div className="text-center mt-4">
-          <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+        <div className="text-center mt-3">
+          <p className="text-xs text-slate-400">
             By continuing, you agree to our{' '}
-            <a href="#" className="text-blue-600 hover:text-blue-700">
+            <a href="#" className="text-indigo-600 hover:text-indigo-700">
               Terms of Service
             </a>{' '}
             and{' '}
-            <a href="#" className="text-blue-600 hover:text-blue-700">
+            <a href="#" className="text-indigo-600 hover:text-indigo-700">
               Privacy Policy
             </a>
           </p>
         </div>
+      </div>
+      </div>
       </motion.div>
     </motion.div>
   );

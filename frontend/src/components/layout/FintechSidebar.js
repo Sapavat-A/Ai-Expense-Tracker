@@ -119,10 +119,10 @@ const FintechSidebar = ({
             </div>
             <div>
               <h2 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                FinTrack Pro
+                Expense Tracker
               </h2>
               <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                SaaS Platform
+                AI Powered Personal Finance Manager
               </p>
             </div>
           </div>
@@ -275,13 +275,13 @@ const FintechSidebar = ({
                     <div className={`p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
                       <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Balance</p>
                       <p className={`text-sm font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                        ${user?.balance ? '$' + user.balance.toLocaleString() : '$0'}
+                        {'$' + Number(user?.balance ?? 0).toLocaleString()}
                       </p>
                     </div>
                     <div className={`p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
                       <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>This Month</p>
                       <p className={`text-sm font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                        ${user?.monthlySpent ? '$' + user.monthlySpent.toLocaleString() : '$0'}
+                        {'$' + Number(user?.monthlySpent ?? 0).toLocaleString()}
                       </p>
                     </div>
                   </div>
